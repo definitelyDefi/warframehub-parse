@@ -50,6 +50,8 @@ def get_darwo(url):
     jsonData = json.dumps(response.json()[0])
     dictData = json.loads(jsonData)
     darwo = 'Darwo: Item - '+ dictData["item"]+' , original price - '+str(dictData["originalPrice"])+' ,sale price - '+str(dictData["salePrice"])+' ,discount - '+str(dictData["discount"])+'%'+' ,expiry - '+str(dictData["expiry"])
+def exit_app():
+    sys.exit()
     
 def application():
     app = QApplication(sys.argv)
@@ -82,6 +84,13 @@ def application():
     darwo_text.setText(darwo)
     darwo_text.move(50,130)
     darwo_text.adjustSize()
+
+    button1 = QtWidgets.QPushButton(window)
+    button1.move(250,150)
+    button1.setText('ОК')
+    button1.adjustSize()
+    button1.clicked.connect(exit_app)
+    
 
 
     window.show()
