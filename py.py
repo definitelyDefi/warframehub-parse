@@ -1,55 +1,69 @@
-import requests, json, sys
+import sys
 from requests.api import get
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QApplication,QMainWindow
+import aiohttp
+import asyncio
 
 
 
-headers = {'user-agent':'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.9 Safari/537.36' }
-
-
-def get_cambion(url):
+async def get_cambion(url):
     global cambion_status
-    response = requests.get(url, headers=headers)
-    jsonData = json.dumps(response.json())
-    dictData = json.loads(jsonData)
-    #print('\n')
-    cambion_status = 'Cambion - '+dictData["active"]
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            dictData = await resp.json()
+            cambion_status = 'Cambion - '+dictData["active"]
+            
+            
+# def get_cambion(url):
+#     global cambion_status
+#     response = requests.get(url, headers=headers)
+#     jsonData = json.dumps(response.json())
+#     dictData = json.loads(jsonData)
+#     #print('\n')
+#     cambion_status = 'Cambion - '+dictData["active"]
     
-def get_cetus(url):
+async def get_cetus(url):
     global cetus_status
-    response = requests.get(url, headers=headers)
-    jsonData = json.dumps(response.json())
-    dictData = json.loads(jsonData)
-    cetus_status = 'Cetus   - '+dictData["state"]+'    time left: '+ dictData["timeLeft"]
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            dictData = await resp.json()
+            cetus_status = 'Cetus   - '+dictData["state"]+'    time left: '+ dictData["timeLeft"]
+            
     
-def get_fortuna(url):
+async def get_fortuna(url):
     global vallis_status
-    response = requests.get(url, headers=headers)
-    jsonData = json.dumps(response.json())
-    dictData = json.loads(jsonData)
-    if dictData["isWarm"] == True:
-        vallis_status = 'Vallis  - warm'+'   time left: '+dictData["timeLeft"]
-    elif dictData["isWarm"] == False:
-        vallis_status = 'Vallis  - cold'+'   time left: '+dictData["timeLeft"]
-        
-def get_earth(url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            dictData = await resp.json()
+
+            if dictData["isWarm"] == True:
+                vallis_status = 'Vallis  - warm'+'   time left: '+dictData["timeLeft"]
+            elif dictData["isWarm"] == False:
+                vallis_status = 'Vallis  - cold'+'   time left: '+dictData["timeLeft"]
+            
+async def get_earth(url):
     global earth_status
-    response = requests.get(url, headers=headers)
-    jsonData = json.dumps(response.json())
-    dictData = json.loads(jsonData)
-    if dictData["isDay"] == True:
-        earth_status = 'Earth  - day'+'  time left: '+dictData["timeLeft"]
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            dictData = await resp.json()
+            if dictData["isDay"] == True:
+                earth_status = 'Earth  - day'+'  time left: '+dictData["timeLeft"]
         
-    elif dictData["isDay"] == False:
-        earth_status = 'Earth   - night'+'  time left: '+dictData["timeLeft"]
+            elif dictData["isDay"] == False:
+                earth_status = 'Earth   - night'+'  time left: '+dictData["timeLeft"]
+            
         
-def get_darwo(url):
+async def get_darwo(url):
     global darwo
-    response = requests.get(url, headers=headers)
-    jsonData = json.dumps(response.json()[0])
-    dictData = json.loads(jsonData)
-    darwo = 'Darwo: Item - '+ dictData["item"]+' , original price - '+str(dictData["originalPrice"])+' ,sale price - '+str(dictData["salePrice"])+' ,discount - '+str(dictData["discount"])+'%'+' ,expiry - '+str(dictData["expiry"])
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+
+            dictdata = await resp.json()
+            dictData = dictdata[0]
+            
+            darwo = 'Darwo: Item - '+ dictData["item"]+' , original price - '+str(dictData["originalPrice"])+' ,sale price - '+str(dictData["salePrice"])+' ,discount - '+str(dictData["discount"])+'%'+' ,expiry - '+str(dictData["expiry"])
+                
 def exit_app():
     sys.exit()
     
@@ -96,12 +110,18 @@ def application():
     window.show()
     sys.exit(app.exec_())
 
-    
+loop = asyncio.get_event_loop()
 
-get_cambion("https://api.warframestat.us/pc/cambionCycle")
-get_cetus("https://api.warframestat.us/pc/cetusCycle")
-get_fortuna("https://api.warframestat.us/pc/vallisCycle")
-get_earth("https://api.warframestat.us/pc/earthCycle")
-get_darwo("https://api.warframestat.us/pc/dailyDeals")
+cambion = asyncio.gather(get_cambion("https://api.warframestat.us/pc/cambionCycle"))
+cetus = asyncio.gather(get_cetus("https://api.warframestat.us/pc/cetusCycle"))
+vallis = asyncio.gather(get_fortuna("https://api.warframestat.us/pc/vallisCycle"))
+earth = asyncio.gather(get_earth("https://api.warframestat.us/pc/earthCycle"))
+darwo = asyncio.gather(get_darwo("https://api.warframestat.us/pc/dailyDeals"))
+all = asyncio.gather(cambion, cetus, vallis, earth,darwo)
+loop.run_until_complete(all)
+
 application()
+
+
+
 
